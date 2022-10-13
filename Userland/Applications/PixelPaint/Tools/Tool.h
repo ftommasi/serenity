@@ -77,6 +77,9 @@ public:
 
     virtual StringView tool_name() const = 0;
 
+    void set_alt_key_override() { m_override_alt_key = true; } // only set to true since the override is false by default. If false is desired do not call method
+    bool is_overriding_alt() { return m_override_alt_key; };
+
 protected:
     Tool() = default;
     WeakPtr<ImageEditor> m_editor;
@@ -91,6 +94,8 @@ protected:
 
     GUI::ValueSlider* m_primary_slider { nullptr };
     GUI::ValueSlider* m_secondary_slider { nullptr };
+
+    bool m_override_alt_key { false };
 };
 
 }

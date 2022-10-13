@@ -100,7 +100,6 @@ void LineTool::on_mousemove(Layer* layer, MouseEvent& event)
     } else {
         m_line_end_position = layer_event.position();
     }
-
     if (layer_event.alt()) {
         m_line_start_position = m_drag_start_position + (m_drag_start_position - m_line_end_position);
     } else {
@@ -125,6 +124,7 @@ void LineTool::on_second_paint(Layer const* layer, GUI::PaintEvent& event)
 
 void LineTool::on_keydown(GUI::KeyEvent& event)
 {
+    set_alt_key_override();
     Tool::on_keydown(event);
     if (event.key() == Key_Escape && m_drawing_button != GUI::MouseButton::None) {
         m_drawing_button = GUI::MouseButton::None;

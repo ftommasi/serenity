@@ -61,6 +61,7 @@ Variant<Gfx::StandardCursor, NonnullRefPtr<Gfx::Bitmap>> CloneTool::cursor()
 
 void CloneTool::on_mousemove(Layer* layer, MouseEvent& event)
 {
+    set_alt_key_override();
     auto& image_event = event.image_event();
     if (image_event.alt())
         return;
@@ -76,6 +77,7 @@ void CloneTool::on_mousemove(Layer* layer, MouseEvent& event)
 
 void CloneTool::on_mousedown(Layer* layer, MouseEvent& event)
 {
+    set_alt_key_override();
     auto& image_event = event.image_event();
     if (image_event.alt()) {
         m_sample_location = image_event.position();

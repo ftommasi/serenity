@@ -118,6 +118,8 @@ public:
 
     Core::EventLoop& gui_event_loop() { return m_gui_event_loop; }
 
+    void set_editor_color_to_color_at_mouse_position(GUI::MouseEvent& event, bool sample_all_layers);
+
 private:
     explicit ImageEditor(NonnullRefPtr<Image>);
 
@@ -185,6 +187,8 @@ private:
     void draw_marching_ants_pixel(Gfx::Painter&, int x, int y) const;
 
     Core::EventLoop& m_gui_event_loop;
+
+    bool m_select_color_mode { false };
 };
 
 }
