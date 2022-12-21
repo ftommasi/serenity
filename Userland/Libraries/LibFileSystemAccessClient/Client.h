@@ -50,7 +50,11 @@ public:
     DeprecatedResult try_request_file_deprecated(GUI::Window* parent_window, DeprecatedString const& path, Core::OpenMode mode);
     DeprecatedResult try_open_file_deprecated(GUI::Window* parent_window, DeprecatedString const& window_title = {}, StringView path = Core::StandardPaths::home_directory(), Core::OpenMode requested_access = Core::OpenMode::ReadOnly);
     DeprecatedResult try_save_file_deprecated(GUI::Window* parent_window, DeprecatedString const& name, DeprecatedString const ext, Core::OpenMode requested_access = Core::OpenMode::WriteOnly | Core::OpenMode::Truncate);
-
+   
+    //TODO: Update return type to Result
+    DeprecatedResult try_save_file(GUI::Window* parent_window,String const& name, String const ext, Core::OpenMode deprecated_requested_access = Core::OpenMode::WriteOnly | Core::OpenMode::Truncate);
+    DeprecatedResult try_request_file(GUI::Window* parent_window, String const& path, Core::OpenMode mode);
+    
     Result request_file_read_only_approved(GUI::Window* parent_window, DeprecatedString const& path);
     Result request_file(GUI::Window* parent_window, DeprecatedString const& path, Core::Stream::OpenMode requested_access);
     Result open_file(GUI::Window* parent_window, DeprecatedString const& window_title = {}, StringView path = Core::StandardPaths::home_directory(), Core::Stream::OpenMode requested_access = Core::Stream::OpenMode::Read);

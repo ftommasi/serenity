@@ -457,6 +457,8 @@ private:
     bool m_default_font { true };
 
     NonnullRefPtr<Gfx::PaletteImpl> m_palette;
+    
+    //TODO: Replace Deprecated String
     DeprecatedString m_title { DeprecatedString::empty() };
 
     WeakPtr<Widget> m_focus_proxy;

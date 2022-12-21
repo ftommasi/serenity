@@ -162,6 +162,11 @@ public:
     {
     }
 
+    RegexStringView(String const& string)
+        : m_view(string.bytes_as_string_view())
+    {
+    }
+
     RegexStringView(StringView const view)
         : m_view(view)
     {
@@ -391,6 +396,19 @@ public:
                 for (auto it = view.begin(); it != view.end(); ++it)
                     builder.append_code_point(*it);
                 return builder.to_deprecated_string();
+            });
+    }
+
+    String to_string() const
+    {
+        return m_view.visit(
+            [](StringView view) { return String::from_deprecated_string(view.to_deprecated_string()).value(); },
+            [](Utf16View view) { return String::from_deprecated_string(view.to_deprecated_string(Utf16View::AllowInvalidCodeUnits::Yes).release_value_but_fixme_should_propagate_errors()).value(); },
+            [](auto& view) {
+                StringBuilder builder;
+                for (auto it = view.begin(); it != view.end(); ++it)
+                    builder.append_code_point(*it);
+                return String::from_deprecated_string(builder.to_deprecated_string()).value();
             });
     }
 

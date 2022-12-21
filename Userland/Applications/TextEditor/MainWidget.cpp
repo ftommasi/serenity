@@ -127,7 +127,7 @@ MainWidget::MainWidget()
             m_editor->insert_at_cursor_or_replace_selection(substitute);
         } else {
             GUI::MessageBox::show(window(),
-                DeprecatedString::formatted("Not found: \"{}\"", needle),
+                String::formatted("Not found: \"{}\"", needle).value().bytes_as_string_view(),
                 "Not found"sv,
                 GUI::MessageBox::Type::Information);
         }
@@ -152,7 +152,7 @@ MainWidget::MainWidget()
             }
         } else {
             GUI::MessageBox::show(window(),
-                DeprecatedString::formatted("Not found: \"{}\"", needle),
+                String::formatted("Not found: \"{}\"", needle).value().bytes_as_string_view(),
                 "Not found"sv,
                 GUI::MessageBox::Type::Information);
         }
@@ -281,10 +281,10 @@ MainWidget::MainWidget()
 
     m_save_as_action = GUI::CommonActions::make_save_as_action([&](auto&) {
         auto extension = m_extension;
-        if (extension.is_null() && m_editor->syntax_highlighter())
-            extension = Syntax::common_language_extension(m_editor->syntax_highlighter()->language());
-
-        auto response = FileSystemAccessClient::Client::the().try_save_file_deprecated(window(), m_name, extension);
+        if (extension.is_empty() && m_editor->syntax_highlighter())
+            extension = String::from_utf8(Syntax::common_language_extension(m_editor->syntax_highlighter()->language())).value(); //NOTE: Probably need to check for error
+        
+        auto response = FileSystemAccessClient::Client::the().try_save_file(window(), m_name, extension);
         if (response.is_error())
             return;
 
@@ -293,7 +293,6 @@ MainWidget::MainWidget()
             GUI::MessageBox::show(window(), "Unable to save file.\n"sv, "Error"sv, GUI::MessageBox::Type::Error);
             return;
         }
-
         set_path(file->filename());
         dbgln("Wrote document to {}", file->filename());
     });
@@ -303,7 +302,7 @@ MainWidget::MainWidget()
             m_save_as_action->activate();
             return;
         }
-        auto response = FileSystemAccessClient::Client::the().try_request_file_deprecated(window(), m_path, Core::OpenMode::Truncate | Core::OpenMode::WriteOnly);
+        auto response = FileSystemAccessClient::Client::the().try_request_file(window(), m_path, Core::OpenMode::Truncate | Core::OpenMode::WriteOnly);
         if (response.is_error())
             return;
 
@@ -314,7 +313,7 @@ MainWidget::MainWidget()
 
     auto file_manager_icon = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/app-file-manager.png"sv).release_value_but_fixme_should_propagate_errors();
     m_open_folder_action = GUI::Action::create("Open Containing Folder", { Mod_Ctrl | Mod_Shift, Key_O }, file_manager_icon, [&](auto&) {
-        auto lexical_path = LexicalPath(m_path);
+        auto lexical_path = LexicalPath(m_path.to_deprecated_string());
         Desktop::Launcher::open(URL::create_with_file_scheme(lexical_path.dirname(), lexical_path.basename()));
     });
     m_open_folder_action->set_enabled(!m_path.is_empty());
@@ -355,7 +354,7 @@ WebView::OutOfProcessWebView& MainWidget::ensure_web_view()
             if (!Desktop::Launcher::open(url)) {
                 GUI::MessageBox::show(
                     window(),
-                    DeprecatedString::formatted("The link to '{}' could not be opened.", url),
+                    String::formatted("The link to '{}' could not be opened.", url).value().bytes_as_string_view(),
                     "Failed to open link"sv,
                     GUI::MessageBox::Type::Error);
             }
@@ -694,9 +693,9 @@ void MainWidget::set_path(StringView path)
         m_extension = {};
     } else {
         auto lexical_path = LexicalPath(path);
-        m_path = lexical_path.string();
-        m_name = lexical_path.title();
-        m_extension = lexical_path.extension();
+        m_path = String::from_deprecated_string(lexical_path.string()).value();
+        m_name = String::from_deprecated_string(lexical_path.title()).value();
+        m_extension = String::from_deprecated_string(lexical_path.extension()).value();
     }
 
     if (m_extension == "c" || m_extension == "cc" || m_extension == "cxx" || m_extension == "cpp" || m_extension == "c++"
@@ -754,7 +753,7 @@ bool MainWidget::read_file(Core::File& file)
     return true;
 }
 
-void MainWidget::open_nonexistent_file(DeprecatedString const& path)
+void MainWidget::open_nonexistent_file(String const& path)
 {
     m_editor->set_text({});
     set_path(path);
@@ -860,7 +859,7 @@ void MainWidget::update_markdown_preview()
     if (document) {
         auto html = document->render_to_html();
         auto current_scroll_pos = m_page_view->visible_content_rect();
-        m_page_view->load_html(html, URL::create_with_file_scheme(m_path));
+        m_page_view->load_html(html, URL::create_with_file_scheme(m_path.to_deprecated_string()));
         m_page_view->scroll_into_view(current_scroll_pos, true, true);
     }
 }
@@ -868,7 +867,7 @@ void MainWidget::update_markdown_preview()
 void MainWidget::update_html_preview()
 {
     auto current_scroll_pos = m_page_view->visible_content_rect();
-    m_page_view->load_html(m_editor->text(), URL::create_with_file_scheme(m_path));
+    m_page_view->load_html(m_editor->text(), URL::create_with_file_scheme(m_path.to_deprecated_string()));
     m_page_view->scroll_into_view(current_scroll_pos, true, true);
 }
 
@@ -879,13 +878,13 @@ void MainWidget::update_statusbar()
 
     StringBuilder builder;
     if (m_editor->has_selection()) {
-        DeprecatedString selected_text = m_editor->selected_text();
+        String selected_text = String::from_deprecated_string(m_editor->selected_text()).value();
         auto word_count = m_editor->number_of_selected_words();
-        builder.appendff("{} {} ({} {}) selected", selected_text.length(), selected_text.length() == 1 ? "character" : "characters", word_count, word_count != 1 ? "words" : "word");
+        builder.appendff("{} {} ({} {}) selected", selected_text.code_points().byte_length(), selected_text.code_points().byte_length() == 1 ? "character" : "characters", word_count, word_count != 1 ? "words" : "word");
     } else {
-        DeprecatedString text = m_editor->text();
+        String text = String::from_deprecated_string(m_editor->text()).value();
         auto word_count = m_editor->number_of_words();
-        builder.appendff("{} {} ({} {})", text.length(), text.length() == 1 ? "character" : "characters", word_count, word_count != 1 ? "words" : "word");
+        builder.appendff("{} {} ({} {})", text.code_points().byte_length(), text.code_points().byte_length() == 1 ? "character" : "characters", word_count, word_count != 1 ? "words" : "word");
     }
     m_statusbar->set_text(0, builder.to_deprecated_string());
 
@@ -893,7 +892,7 @@ void MainWidget::update_statusbar()
         auto language = m_editor->syntax_highlighter()->language();
         m_statusbar->set_text(1, Syntax::language_to_string(language));
     }
-    m_statusbar->set_text(2, DeprecatedString::formatted("Ln {}, Col {}", m_editor->cursor().line() + 1, m_editor->cursor().column()));
+    m_statusbar->set_text(2, String::formatted("Ln {}, Col {}", m_editor->cursor().line() + 1, m_editor->cursor().column()).value().bytes_as_string_view());
 }
 
 void MainWidget::find_text(GUI::TextEditor::SearchDirection direction, ShowMessageIfNoResults show_message)
@@ -910,7 +909,7 @@ void MainWidget::find_text(GUI::TextEditor::SearchDirection direction, ShowMessa
 
     if (!result.is_valid() && show_message == ShowMessageIfNoResults::Yes) {
         GUI::MessageBox::show(window(),
-            DeprecatedString::formatted("Not found: \"{}\"", needle),
+            String::formatted("Not found: \"{}\"", needle).value().bytes_as_string_view(),
             "Not found"sv,
             GUI::MessageBox::Type::Information);
     }

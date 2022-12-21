@@ -5,6 +5,9 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include "AK/DeprecatedString.h"
+#include "AK/StringView.h"
+#include "AK/Utf8View.h"
 #include <AK/LexicalPath.h>
 #include <LibCore/File.h>
 #include <LibFileSystemAccessClient/Client.h>
@@ -92,6 +95,33 @@ static Core::Stream::OpenMode to_stream_open_mode(Core::OpenMode open_mode)
         result |= Core::Stream::OpenMode::KeepOnExec;
 
     return result;
+}
+
+DeprecatedResult Client::try_request_file(GUI::Window* parent_window, String const& path, Core::OpenMode deprecated_mode)
+{
+    auto const id = get_new_id();
+    m_promises.set(id, PromiseAndWindow { { Core::Promise<DeprecatedResult>::construct() }, parent_window });
+
+    auto parent_window_server_client_id = GUI::ConnectionToWindowServer::the().expose_client_id();
+    auto child_window_server_client_id = expose_window_server_client_id();
+    auto parent_window_id = parent_window->window_id();
+
+    GUI::ConnectionToWindowServer::the().add_window_stealing_for_client(child_window_server_client_id, parent_window_id);
+
+    ScopeGuard guard([parent_window_id, child_window_server_client_id] {
+        GUI::ConnectionToWindowServer::the().remove_window_stealing_for_client(child_window_server_client_id, parent_window_id);
+    });
+
+    auto const mode = to_stream_open_mode(deprecated_mode);
+
+    if (path.to_deprecated_string().starts_with('/')) {
+        async_request_file(id, parent_window_server_client_id, parent_window_id, path.to_deprecated_string(), mode);
+    } else {
+        auto full_path = LexicalPath::join(Core::File::current_working_directory(), path).string();
+        async_request_file(id, parent_window_server_client_id, parent_window_id, full_path, mode);
+    }
+
+    return handle_promise<DeprecatedResult>(id);
 }
 
 DeprecatedResult Client::try_request_file_deprecated(GUI::Window* parent_window, DeprecatedString const& path, Core::OpenMode deprecated_mode)
@@ -186,6 +216,28 @@ Result Client::open_file(GUI::Window* parent_window, DeprecatedString const& win
     async_prompt_open_file(id, parent_window_server_client_id, parent_window_id, window_title, path, requested_access);
 
     return handle_promise<Result>(id);
+}
+
+DeprecatedResult Client::try_save_file(GUI::Window* parent_window, String const& name, String const ext, Core::OpenMode deprecated_requested_access)
+{
+    auto const id = get_new_id();
+    m_promises.set(id, PromiseAndWindow { { Core::Promise<DeprecatedResult>::construct() }, parent_window });
+
+    auto parent_window_server_client_id = GUI::ConnectionToWindowServer::the().expose_client_id();
+    auto child_window_server_client_id = expose_window_server_client_id();
+    auto parent_window_id = parent_window->window_id();
+
+    GUI::ConnectionToWindowServer::the().add_window_stealing_for_client(child_window_server_client_id, parent_window_id);
+
+    ScopeGuard guard([parent_window_id, child_window_server_client_id] {
+        GUI::ConnectionToWindowServer::the().remove_window_stealing_for_client(child_window_server_client_id, parent_window_id);
+    });
+
+    auto const requested_access = to_stream_open_mode(deprecated_requested_access);
+
+    async_prompt_save_file(id, parent_window_server_client_id, parent_window_id, name.is_empty() ? String::from_utf8(StringView("Untitled",8)).value().to_deprecated_string(): name.to_deprecated_string(), ext.is_empty() ? String::from_utf8(StringView("txt",3)).value().to_deprecated_string() : ext.to_deprecated_string(), Core::StandardPaths::home_directory(), requested_access);
+
+    return handle_promise<DeprecatedResult>(id);
 }
 
 DeprecatedResult Client::try_save_file_deprecated(GUI::Window* parent_window, DeprecatedString const& name, DeprecatedString const ext, Core::OpenMode deprecated_requested_access)

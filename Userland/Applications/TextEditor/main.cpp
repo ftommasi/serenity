@@ -72,8 +72,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     window->set_icon(app_icon.bitmap_for_size(16));
 
     if (file_to_edit) {
-        FileArgument parsed_argument(file_to_edit);
-        auto response = FileSystemAccessClient::Client::the().try_request_file_read_only_approved_deprecated(window, parsed_argument.filename());
+        FileArgument parsed_argument(String::from_deprecated_string(DeprecatedString(file_to_edit)).value());
+        auto response = FileSystemAccessClient::Client::the().try_request_file_read_only_approved_deprecated(window, parsed_argument.filename().to_deprecated_string());
 
         if (response.is_error()) {
             if (response.error().code() == ENOENT)
