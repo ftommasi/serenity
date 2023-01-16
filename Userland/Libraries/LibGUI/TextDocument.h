@@ -92,6 +92,12 @@ public:
 
     DeprecatedString text() const;
     DeprecatedString text_in_range(TextRange const&) const;
+    String text() const;
+    String text_in_range(TextRange const&) const;
+
+    int get_code_points_after_cursor(TextPosition const& cursor, TextPosition const& next_word_break) const;
+    int get_code_points_before_cursor(TextPosition const& cursor, TextPosition const& prev_word_break) const;
+    int get_emoji_code_points_in_span(Span<u32 const> const& cursor_span, int slice_start, size_t slice_size) const;
 
     int get_code_points_after_cursor(TextPosition const& cursor, TextPosition const& next_word_break) const;
     int get_code_points_before_cursor(TextPosition const& cursor, TextPosition const& prev_word_break) const;
