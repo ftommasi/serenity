@@ -92,8 +92,6 @@ public:
 
     DeprecatedString text() const;
     DeprecatedString text_in_range(TextRange const&) const;
-    String text() const;
-    String text_in_range(TextRange const&) const;
 
     int get_code_points_after_cursor(TextPosition const& cursor, TextPosition const& next_word_break) const;
     int get_code_points_before_cursor(TextPosition const& cursor, TextPosition const& prev_word_break) const;
