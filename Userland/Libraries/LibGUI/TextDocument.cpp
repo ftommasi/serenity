@@ -378,6 +378,30 @@ DeprecatedString TextDocument::text() const
 }
 
 DeprecatedString TextDocument::text_in_range(TextRange const& a_range) const
+{
+    auto range = a_range.normalized();
+    if (is_empty() || line_count() < range.end().line() - range.start().line())
+        return DeprecatedString("");
+
+    StringBuilder builder;
+    for (size_t i = range.start().line(); i <= range.end().line(); ++i) {
+        auto& line = this->line(i);
+        size_t selection_start_column_on_line = range.start().line() == i ? range.start().column() : 0;
+        size_t selection_end_column_on_line = range.end().line() == i ? range.end().column() : line.length();
+
+        if (!line.is_empty()) {
+            builder.append(
+                Utf32View(
+                    line.code_points() + selection_start_column_on_line,
+                    selection_end_column_on_line - selection_start_column_on_line));
+        }
+
+        if (i != range.end().line())
+            builder.append('\n');
+    }
+
+    return builder.to_deprecated_string();
+}
 
 // This function will determine the number of codepoints of the glyph immediately presceding the cursor, by determining if there is an emoji. If no emoji is found it will return 1.
 int TextDocument::get_code_points_before_cursor(TextPosition const& cursor, TextPosition const& prev_word_break) const
@@ -434,32 +458,6 @@ int TextDocument::get_emoji_code_points_in_span(Span<u32 const> const& cursor_sp
     } else {
         return get_emoji_code_points_in_span(cursor_span, slice_start - 1, slice_size + 1); // Recursively expand to the next code_point and search again.
     }
-}
-
-String TextDocument::text_in_range(TextRange const& a_range) const
-{
-    auto range = a_range.normalized();
-    if (is_empty() || line_count() < range.end().line() - range.start().line())
-        return DeprecatedString("");
-
-    StringBuilder builder;
-    for (size_t i = range.start().line(); i <= range.end().line(); ++i) {
-        auto& line = this->line(i);
-        size_t selection_start_column_on_line = range.start().line() == i ? range.start().column() : 0;
-        size_t selection_end_column_on_line = range.end().line() == i ? range.end().column() : line.length();
-
-        if (!line.is_empty()) {
-            builder.append(
-                Utf32View(
-                    line.code_points() + selection_start_column_on_line,
-                    selection_end_column_on_line - selection_start_column_on_line));
-        }
-
-        if (i != range.end().line())
-            builder.append('\n');
-    }
-
-    return builder.to_deprecated_string();
 }
 
 u32 TextDocument::code_point_at(TextPosition const& position) const
