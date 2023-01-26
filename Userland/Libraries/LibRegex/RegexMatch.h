@@ -402,7 +402,7 @@ public:
     String to_string() const
     {
         return m_view.visit(
-            [](StringView view) { return String::from_deprecated_string(view.to_deprecated_string()).value(); },
+            [](StringView view) { return String::from_utf8(view).value(); },
             [](Utf16View view) { return String::from_deprecated_string(view.to_deprecated_string(Utf16View::AllowInvalidCodeUnits::Yes).release_value_but_fixme_should_propagate_errors()).value(); },
             [](auto& view) {
                 StringBuilder builder;

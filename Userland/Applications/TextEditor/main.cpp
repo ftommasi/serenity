@@ -73,6 +73,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     if (file_to_edit) {
         FileArgument parsed_argument(String::from_deprecated_string(DeprecatedString(file_to_edit)).value());
+        //TODO(ftommasi): remove use of depreceated string
         auto response = FileSystemAccessClient::Client::the().try_request_file_read_only_approved_deprecated(window, parsed_argument.filename().to_deprecated_string());
 
         if (response.is_error()) {
@@ -81,7 +82,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
             else
                 return 1;
         } else {
-            if (!text_widget->read_file(*response.value()))
+            if (!text_widget->read_file(response.value()))
                 return 1;
             text_widget->editor().set_cursor_and_focus_line(parsed_argument.line().value_or(1) - 1, parsed_argument.column().value_or(0));
         }

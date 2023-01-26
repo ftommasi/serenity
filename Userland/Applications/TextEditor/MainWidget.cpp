@@ -282,7 +282,7 @@ MainWidget::MainWidget()
     m_save_as_action = GUI::CommonActions::make_save_as_action([&](auto&) {
         auto extension = m_extension;
         if (extension.is_empty() && m_editor->syntax_highlighter())
-            extension = String::from_utf8(Syntax::common_language_extension(m_editor->syntax_highlighter()->language())).value(); //NOTE: Probably need to check for error
+            extension = String::from_utf8(Syntax::common_language_extension(m_editor->syntax_highlighter()->language())).value();
         
         auto response = FileSystemAccessClient::Client::the().try_save_file(window(), m_name, extension);
         if (response.is_error())
@@ -302,7 +302,7 @@ MainWidget::MainWidget()
             m_save_as_action->activate();
             return;
         }
-        auto response = FileSystemAccessClient::Client::the().try_request_file(window(), m_path, Core::OpenMode::Truncate | Core::OpenMode::WriteOnly);
+        auto response = FileSystemAccessClient::Client::the().try_request_file_deprecated(window(), m_path.to_deprecated_string(), Core::OpenMode::Truncate | Core::OpenMode::WriteOnly);
         if (response.is_error())
             return;
 
@@ -313,7 +313,7 @@ MainWidget::MainWidget()
 
     auto file_manager_icon = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/app-file-manager.png"sv).release_value_but_fixme_should_propagate_errors();
     m_open_folder_action = GUI::Action::create("Open Containing Folder", { Mod_Ctrl | Mod_Shift, Key_O }, file_manager_icon, [&](auto&) {
-        auto lexical_path = LexicalPath(m_path.to_deprecated_string());
+        auto lexical_path = LexicalPath(m_path.to_deprecated_string()); 
         Desktop::Launcher::open(URL::create_with_file_scheme(lexical_path.dirname(), lexical_path.basename()));
     });
     m_open_folder_action->set_enabled(!m_path.is_empty());
