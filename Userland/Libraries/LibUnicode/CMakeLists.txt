@@ -7,6 +7,7 @@ set(SOURCES
     Normalize.cpp
     String.cpp
     UnicodeUtils.cpp
+    GraphemeCluster.cpp
     ${UNICODE_DATA_SOURCES}
 )
 set(GENERATED_SOURCES ${CURRENT_LIB_GENERATED})
