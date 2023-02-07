@@ -105,6 +105,14 @@ public:
         return Utf32View(m_code_points + offset, length);
     }
 
+    size_t code_unit_offset_of(Utf32CodePointIterator const& it) const
+    {
+        VERIFY(it.m_ptr >= begin_ptr());
+        VERIFY(it.m_ptr <= end_ptr());
+
+        return it.m_ptr - begin_ptr();
+    }
+
 private:
     u32 const* begin_ptr() const
     {

@@ -471,9 +471,11 @@ int TextDocument::get_prev_graphene_cluser_boundary(TextPosition const& cursor) 
     if (cursor.column() < 2)
         return cursor.column();
 
-    auto start_index = line.last_non_whitespace_column();
-    if (!start_index.has_value())
-        start_index = 0;
+    // auto start_index = 0;
+    // if (line.last_non_whitespace_column().has_value())
+    //     start_index = line.last_non_whitespace_column().value();
+
+    // TODO(ftommasi): i think the bug is happening here when emoji get turned from u32 to u16
     auto to_view = Utf32View(line.code_points(), line.length());
     auto _string = AK::utf32_to_utf16(to_view);
 
@@ -482,7 +484,7 @@ int TextDocument::get_prev_graphene_cluser_boundary(TextPosition const& cursor) 
 
     auto string = Utf16View { _string.value() };
 
-    auto boundaries_cache = Unicode::find_grapheme_segmentation_boundaries(string); // a. Assert: startIndex ≥ 0.
+    auto boundaries_cache = Unicode::find_grapheme_segmentation_boundaries(to_view); // a. Assert: startIndex ≥ 0.
     // VERIFY(start_index >= 0);
     //  b. Assert: startIndex < len.
     // VERIFY(start_index < length);
@@ -497,45 +499,47 @@ int TextDocument::get_prev_graphene_cluser_boundary(TextPosition const& cursor) 
 
     for (size_t cur_idx = 0; cur_idx < boundaries_cache.size(); cur_idx++) {
         auto cur_boundary = boundaries_cache.at(cur_idx);
-        if (cur_boundary - cursor.column() > boundary_guess - cursor.column()) {
+        // If we find a grapheme boundary further to the right. Update cur_boundary and prev_boundary.
+        if ((cur_boundary - cursor.column()) > (boundary_guess - cursor.column())) {
             prev_boundary_guess = boundary_guess;
             boundary_guess = cur_boundary;
             dbgln("Updating cur:{} prev:{}", cur_boundary, prev_boundary_guess);
         }
     }
-    dbgln("we found a boundary guess: deleting {} - ({}/{} - 1) = {}", cursor.column(), boundary_guess, prev_boundary_guess, cursor.column() - boundary_guess - 1);
+    auto to_delete = cursor.column() - (boundary_guess);
+    dbgln("we found a boundary guess: deleting {} - ({}/{} - 1) = {}", cursor.column(), boundary_guess, prev_boundary_guess, to_delete);
 
     // the current boundary guess
     //  return the distance from the cursor to the boundary guess1
-    return cursor.column() - (boundary_guess);
+    return to_delete;
 
     // TODO(ftommasi): remove obsolete code
-    auto boundary_marker = cursor.column() - 1;
-    bool found_break = false;
-    for (u32 code_point_idx = start_index.value_or(0); code_point_idx > line.length(); code_point_idx++) {
-        --boundary_marker;
-        for (auto temp_marker = boundary_marker; temp_marker < cursor.column(); temp_marker++) {
+    // auto boundary_marker = cursor.column() - 1;
+    // bool found_break = false;
+    // for (u32 code_point_idx = start_index.value_or(0); code_point_idx > line.length(); code_point_idx++) {
+    //    --boundary_marker;
+    //    for (auto temp_marker = boundary_marker; temp_marker < cursor.column(); temp_marker++) {
 
-            auto code_point = line_span.at(temp_marker);
-            auto next_code_pount = line_span.at(temp_marker);
-            if (temp_marker > 0 && temp_marker + 1 < cursor.column())
-                next_code_pount = line_span.at(temp_marker + 1);
+    //        auto code_point = line_span.at(temp_marker);
+    //        auto next_code_pount = line_span.at(temp_marker);
+    //        if (temp_marker > 0 && temp_marker + 1 < cursor.column())
+    //            next_code_pount = line_span.at(temp_marker + 1);
 
-            auto curr_cluget_grapheme_cluster_break_property_value
-                = Unicode::GraphemeCluster::get_grapheme_cluster_break_property_value(code_point, next_code_pount);
+    //        auto curr_cluget_grapheme_cluster_break_property_value
+    //            = Unicode::GraphemeCluster::get_grapheme_cluster_break_property_value(code_point, next_code_pount);
 
-            if (curr_cluget_grapheme_cluster_break_property_value == Unicode::GraphemeCluster::Break) {
-                found_break = true;
-                break;
-            }
-        }
-        if (found_break)
-            break;
-    }
-    if (found_break)
-        return cursor.column() - boundary_marker - 1;
-    else
-        return cursor.column();
+    //        if (curr_cluget_grapheme_cluster_break_property_value == Unicode::GraphemeCluster::Break) {
+    //            found_break = true;
+    //            break;
+    //        }
+    //    }
+    //    if (found_break)
+    //        break;
+    //}
+    // if (found_break)
+    //    return cursor.column() - boundary_marker - 1;
+    // else
+    //    return cursor.column();
 }
 
 // This function will determine the number of codepoints of the glyph immediately following the cursor, by determining if there is an emoji. If no emoji is found it will return 1.
