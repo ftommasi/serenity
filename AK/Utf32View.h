@@ -113,6 +113,16 @@ public:
         return it.m_ptr - begin_ptr();
     }
 
+    size_t length_in_code_points() const
+    {
+        return m_length;
+    }
+
+    size_t length_in_code_units() const
+    {
+        return m_length;
+    }
+
 private:
     u32 const* begin_ptr() const
     {
