@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include "AK/Format.h"
 #include <AK/Debug.h>
 #include <AK/StringBuilder.h>
 #include <AK/Utf8View.h>

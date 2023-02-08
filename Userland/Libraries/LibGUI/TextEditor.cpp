@@ -1550,6 +1550,15 @@ ErrorOr<void> TextEditor::write_to_file(Core::Stream::File& file)
     return {};
 }
 
+// TODO(ftommasi): implement interface from editor to document for logic. Maybe refactor
+size_t TextEditor::get_code_points_before_cursor(TextPosition const& cursor) const
+{
+    return document().get_code_points_before_cursor(cursor);
+}
+size_t TextEditor::get_code_points_after_cursor(TextPosition const& cursor) const
+{
+    return document().get_code_points_after_cursor(cursor);
+}
 DeprecatedString TextEditor::text() const
 {
     return document().text();

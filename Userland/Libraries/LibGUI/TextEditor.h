@@ -223,6 +223,9 @@ public:
     Gfx::IntRect cursor_content_rect() const;
     TextPosition text_position_at_content_position(Gfx::IntPoint) const;
 
+    size_t get_code_points_before_cursor(TextPosition const& cursor) const;
+    size_t get_code_points_after_cursor(TextPosition const& cursor) const;
+
     void delete_text_range(TextRange);
 
     bool text_is_secret() const { return m_text_is_secret; }

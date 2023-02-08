@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include "AK/Format.h"
 #include <AK/CharacterTypes.h>
 #include <LibGUI/EditingEngine.h>
 #include <LibGUI/Event.h>
@@ -166,8 +167,12 @@ bool EditingEngine::on_key(KeyEvent const& event)
 
 void EditingEngine::move_one_left()
 {
+    dbgln("moving one left");
     if (m_editor->cursor().column() > 0) {
-        int new_column = m_editor->cursor().column() - 1;
+        // TODO(ftommasi): here rather than moving one codepoint, lets move to the next gbp cluster
+        // int new_column = m_editor->cursor().column() - 1;
+        auto new_column = m_editor->cursor().column() - m_editor->get_code_points_before_cursor(m_editor->cursor());
+        dbgln("commanding to move to col: {} ", new_column);
         m_editor->set_cursor(m_editor->cursor().line(), new_column);
     } else if (m_editor->cursor().line() > 0) {
         int new_line = m_editor->cursor().line() - 1;
@@ -178,15 +183,18 @@ void EditingEngine::move_one_left()
 
 void EditingEngine::move_one_right()
 {
+    dbgln("moving one right");
     int new_line = m_editor->cursor().line();
     int new_column = m_editor->cursor().column();
     if (m_editor->cursor().column() < m_editor->current_line().length()) {
         new_line = m_editor->cursor().line();
-        new_column = m_editor->cursor().column() + 1;
+        // new_column = m_editor->cursor().column() + 1;
+        new_column = m_editor->cursor().column() + m_editor->get_code_points_after_cursor(m_editor->cursor());
     } else if (m_editor->cursor().line() != m_editor->line_count() - 1) {
         new_line = m_editor->cursor().line() + 1;
         new_column = 0;
     }
+    dbgln("commanding to move to col: {} ", new_column);
     m_editor->set_cursor(new_line, new_column);
 }
 
