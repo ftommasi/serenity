@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include "AK/Format.h"
 #include <AK/CharacterTypes.h>
 #include <LibGUI/EditingEngine.h>
 #include <LibGUI/Event.h>
@@ -178,6 +179,7 @@ void EditingEngine::move_one_left()
 
 void EditingEngine::move_one_right()
 {
+    dbgln("calling move_one_right");
     int new_line = m_editor->cursor().line();
     int new_column = m_editor->cursor().column();
     if (m_editor->cursor().column() < m_editor->current_line().length()) {

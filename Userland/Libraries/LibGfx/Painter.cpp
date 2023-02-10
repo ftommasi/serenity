@@ -43,7 +43,7 @@ namespace Gfx {
 
 static bool should_paint_as_space(u32 code_point)
 {
-    return is_ascii_space(code_point) || code_point == 0xa0;
+    return is_ascii_space(code_point) /*|| code_point == 0xa0*/;
 }
 
 template<BitmapFormat format = BitmapFormat::Invalid>
@@ -2502,20 +2502,36 @@ void Painter::draw_text_run(FloatPoint baseline_start, Utf8View const& string, F
     float space_width = font.glyph_or_emoji_width(' ');
 
     u32 last_code_point = 0;
-
+    u32 first_code_point = 0;
+    u32 second_code_point = 0;
+    u32 code_point_counter = 0;
+    bool first_iter_flag = true;
     for (auto code_point_iterator = string.begin(); code_point_iterator != string.end(); ++code_point_iterator) {
         auto code_point = *code_point_iterator;
+        // make our markers 3 code_points wide
+        if (code_point_counter == 0)
+            first_code_point = code_point;
+
+        if (code_point_counter == 1)
+            second_code_point = code_point;
+
+        ++code_point_counter;
         if (should_paint_as_space(code_point)) {
             x += space_width + font.glyph_spacing();
             last_code_point = code_point;
             continue;
         }
 
-        // FIXME: this is probably not the real space taken for complex emojis
-        x += font.glyphs_horizontal_kerning(last_code_point, code_point);
-        draw_glyph_or_emoji(FloatPoint { x, y }, code_point_iterator, font, color);
-        x += font.glyph_or_emoji_width(code_point) + font.glyph_spacing();
-        last_code_point = code_point;
+        // TODO(ftommasi): this is maybe where the issue is
+        //  FIXME: this is probably not the real space taken for complex emojis
+        if (first_iter_flag) {
+            x += font.glyphs_horizontal_kerning(first_code_point, second_code_point);
+            draw_glyph_or_emoji(FloatPoint { x, y }, code_point_iterator, font, color);
+            x += font.glyph_or_emoji_width(code_point) + font.glyph_spacing();
+        }
+        if (last_code_point > 0)
+            last_code_point = code_point;
+        first_iter_flag = false;
     }
 }
 

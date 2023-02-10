@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include "AK/Format.h"
+#include "AK/Forward.h"
 #include <AK/Badge.h>
 #include <AK/CharacterTypes.h>
 #include <AK/QuickSort.h>
@@ -16,6 +18,7 @@
 #include <LibGUI/TextDocument.h>
 #include <LibRegex/Regex.h>
 #include <LibUnicode/CharacterTypes.h>
+#include <LibUnicode/Emoji.h>
 
 namespace GUI {
 
@@ -844,41 +847,54 @@ void InsertTextCommand::perform_formatting(TextDocument::Client const& client)
     size_t column = m_range.start().column();
     size_t line_indentation = dest_line.leading_spaces();
     bool at_start_of_line = line_indentation == column;
-
-    for (auto input_char : m_text) {
-        if (input_char == '\n') {
-            size_t spaces_at_end = 0;
-            if (column < line_indentation)
-                spaces_at_end = line_indentation - column;
-            line_indentation -= spaces_at_end;
-            builder.append('\n');
-            column = 0;
-            if (should_auto_indent) {
-                for (; column < line_indentation; ++column) {
+    // TODO(ftommasi): this is correct for inserting any text. m_text is the whole emoji
+    Vector<u32> vec;
+    auto bb = m_text.to_byte_buffer();
+    for (auto byte : m_text) {
+        vec.append(byte);
+    }
+    dbgln("about to insert {}: {}", m_text, m_text.bytes().size());
+    if (Unicode::find_emoji_for_code_points(vec.span()).has_value()) {
+        // We have detected an emoji, only advance the the cursor 1 position and insert all bytes
+        dbgln("detected emoji");
+        builder.append(m_text);
+        column += 1; // TODO(ftommasi): we add 2 so we have spacing between emoji
+    } else {
+        for (auto input_char : m_text) {
+            if (input_char == '\n') {
+                size_t spaces_at_end = 0;
+                if (column < line_indentation)
+                    spaces_at_end = line_indentation - column;
+                line_indentation -= spaces_at_end;
+                builder.append('\n');
+                column = 0;
+                if (should_auto_indent) {
+                    for (; column < line_indentation; ++column) {
+                        builder.append(' ');
+                    }
+                }
+                at_start_of_line = true;
+            } else if (input_char == '\t') {
+                size_t next_soft_tab_stop = ((column + tab_width) / tab_width) * tab_width;
+                size_t spaces_to_insert = next_soft_tab_stop - column;
+                for (size_t i = 0; i < spaces_to_insert; ++i) {
                     builder.append(' ');
                 }
-            }
-            at_start_of_line = true;
-        } else if (input_char == '\t') {
-            size_t next_soft_tab_stop = ((column + tab_width) / tab_width) * tab_width;
-            size_t spaces_to_insert = next_soft_tab_stop - column;
-            for (size_t i = 0; i < spaces_to_insert; ++i) {
-                builder.append(' ');
-            }
-            column = next_soft_tab_stop;
-            if (at_start_of_line) {
-                line_indentation = column;
-            }
-        } else {
-            if (input_char == ' ') {
+                column = next_soft_tab_stop;
                 if (at_start_of_line) {
-                    ++line_indentation;
+                    line_indentation = column;
                 }
             } else {
-                at_start_of_line = false;
+                if (input_char == ' ') {
+                    if (at_start_of_line) {
+                        ++line_indentation;
+                    }
+                } else {
+                    at_start_of_line = false;
+                }
+                builder.append(input_char);
+                ++column;
             }
-            builder.append(input_char);
-            ++column;
         }
     }
     m_text = builder.to_deprecated_string();
